@@ -24,7 +24,7 @@ public class UserController {
 
     @PostMapping
     public User create(@Valid @RequestBody User user) {
-        userValidator(user);
+        usernameCheck(user);
         user.setId(++tempId);
         userHashMap.put(user.getId(), user);
         log.info("Пользователь " + user.getName() + " добавлен");
@@ -37,13 +37,13 @@ public class UserController {
             log.debug("Пользователь не найден");
             throw new ValidationException("Пользователь не найден");
         }
-        userValidator(user);
+        usernameCheck(user);
         userHashMap.put(user.getId(), user);
         log.info("Данные пользователя " + user.getLogin() + " обновлены");
         return user;
     }
 
-    private void userValidator(User user) {
+    private void usernameCheck(User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
