@@ -8,7 +8,6 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Data;
-import ru.yandex.practicum.filmorate.annotations.ReleaseDate;
 
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -27,7 +26,6 @@ public class Film {
     private String name;
     @Size(max = 200, message = "The maximum number of characters is 200.")
     private String description;
-    @ReleaseDate
     private LocalDate releaseDate;
     @Positive(message = "The duration of the movie must be a positive number.")
     private Integer duration;
@@ -39,6 +37,10 @@ public class Film {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public LocalDate getReleaseDate() {
+        return releaseDate;
     }
 
     public void addLike(Long userId) {

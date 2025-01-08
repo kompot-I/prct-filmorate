@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ public class UserService {
     }
 
     public User createUser(User user) {
+        validation(user);
         return userStorage.addUser(user);
     }
 
@@ -36,6 +38,13 @@ public class UserService {
     public void addFriend(Long userId, Long friendId) {
         User user = userStorage.getUserById(userId);
         User friend = userStorage.getUserById(friendId);
+
+        if (user == null) {
+            throw new NotFoundException("User with id " + userId + " not found");
+        }
+        if (friend == null) {
+            throw new NotFoundException("Friend not " + friendId + " found");
+        }
 
         user.addFriend(friendId);
         friend.addFriend(userId);
@@ -77,5 +86,17 @@ public class UserService {
                 .filter(otherUser.getFriends()::contains)
                 .map(userStorage::getUserById)
                 .collect(Collectors.toList());
+    }
+
+    private void validation(User user) {
+        if (!(user.getEmail().contains("@"))) {
+            throw new ValidationException("Email should contain symbol @");
+        }
+        if (user.getLogin().contains(" ")) {
+            throw new ValidationException("Login should not contain spaces");
+        }
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
     }
 }

@@ -4,10 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.annotations.DateValidator;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +25,7 @@ public class FilmService {
     }
 
     public Film addFilm(Film film) {
+        validation(film);
         return filmStorage.addFilm(film);
     }
 
@@ -61,5 +65,11 @@ public class FilmService {
                 .sorted((f1, f2) -> Integer.compare(f2.getLikesCount(), f1.getLikesCount()))
                 .limit(count)
                 .collect(Collectors.toList());
+    }
+
+    private void validation(Film film) {
+        if (film.getReleaseDate().isBefore(LocalDate.parse("1895-12-28", DateValidator.DATE_PATTERN))) {
+            throw new ValidationException("The release date is no earlier than December 28, 1895");
+        }
     }
 }
