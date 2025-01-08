@@ -6,8 +6,10 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.List;
 
@@ -17,10 +19,12 @@ import java.util.List;
 public class FilmController {
 
     private final FilmService filmService;
+    private final UserService userService;
 
     @Autowired
-    public FilmController(FilmService filmService) {
+    public FilmController(FilmService filmService, UserService userService) {
         this.filmService = filmService;
+        this.userService = userService;
     }
 
     @GetMapping
@@ -54,11 +58,17 @@ public class FilmController {
 
     @PutMapping("/{id}/like/{userId}")
     public void addLike(@PathVariable Long id, @PathVariable Long userId) {
+        if (userService.getUserById(userId) == null) {
+            throw new NotFoundException("User with id " + userId + " not found");
+        }
         filmService.addLike(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
     public void removeLike(@PathVariable Long id, @PathVariable Long userId) {
+        if (userService.getUserById(userId) == null) {
+            throw new NotFoundException("User with id " + userId + " not found");
+        }
         filmService.removeLike(id, userId);
     }
 
