@@ -60,6 +60,9 @@ public class FilmService {
 
     public void removeLike(Long filmId, Long userId) {
         Film film = filmStorage.getFilmById(filmId);
+        if (film == null) {
+            throw new NotFoundException("Film with id " + film + " not found");
+        }
         film.removeLike(userId);
     }
 
