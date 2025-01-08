@@ -31,6 +31,9 @@ public class FilmService {
 
     public void addLike(Long filmId, Long userId) {
         Film film = filmStorage.getFilmById(filmId);
+        if (film == null) {
+            throw new NotFoundException("Film not found");
+        }
         film.addLike(userId);
     }
 

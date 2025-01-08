@@ -28,7 +28,6 @@ public class UserController {
     @PostMapping
     public User create(@Valid @RequestBody User user) {
         usernameCheck(user);
-        log.info("User " + user.getName() + " has been added");
         return userService.createUser(user);
     }
 

@@ -29,7 +29,7 @@ public class FilmController {
     }
 
     @PostMapping
-    public Film addFilm(@RequestBody Film film) {
+    public Film addFilm(@Valid @RequestBody Film film) {
         log.info("Film " + film.getName() + " added");
         return filmService.addFilm(film);
     }

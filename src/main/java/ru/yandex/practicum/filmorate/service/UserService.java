@@ -24,6 +24,7 @@ public class UserService {
 
     public User createUser(User user) {
         validation(user);
+        log.info("User " + user.getName() + " has been added");
         return userStorage.addUser(user);
     }
 
@@ -52,6 +53,9 @@ public class UserService {
 
     public List<User> getFriends(Long userId) {
         User user = userStorage.getUserById(userId);
+        if (user == null) {
+            throw new NotFoundException("User with id " + userId + " not found");
+        }
         return user.getFriends().stream()
                 .map(userStorage::getUserById)
                 .collect(Collectors.toList());
@@ -73,6 +77,13 @@ public class UserService {
     public void removeFriend(Long userId, Long friendId) {
         User user = userStorage.getUserById(userId);
         User friend = userStorage.getUserById(friendId);
+
+        if (user == null) {
+            throw new NotFoundException("User with id " + userId + " not found");
+        }
+        if (friend == null) {
+            throw new NotFoundException("Friend not " + friendId + " found");
+        }
 
         user.removeFriend(friendId);
         friend.removeFriend(userId);
