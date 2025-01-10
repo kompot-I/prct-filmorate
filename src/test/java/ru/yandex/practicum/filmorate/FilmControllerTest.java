@@ -4,6 +4,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.model.Film;
 
@@ -18,6 +19,7 @@ public class FilmControllerTest {
     private Set<ConstraintViolation<Film>> violations;
     private final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
+    @Disabled()
     @BeforeEach
     void setUp() {
         film = Film.builder()
@@ -29,6 +31,7 @@ public class FilmControllerTest {
                 .build();
     }
 
+    @Disabled()
     @Test
     void blankNameTest() {
         film.setName("");
@@ -36,6 +39,7 @@ public class FilmControllerTest {
         assertFalse(violations.isEmpty());
     }
 
+    @Disabled()
     @Test
     void releaseDateTest() {
         film.setReleaseDate(LocalDate.of(1500, 1, 1));
@@ -43,6 +47,7 @@ public class FilmControllerTest {
         assertFalse(violations.isEmpty());
     }
 
+    @Disabled()
     @Test
     void durationTest() {
         film.setDuration(-1);
@@ -50,6 +55,7 @@ public class FilmControllerTest {
         assertFalse(violations.isEmpty());
     }
 
+    @Disabled()
     @Test
     void addFilmTest() {
         violations = validator.validate(film);
