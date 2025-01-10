@@ -23,23 +23,11 @@ public class User {
     private LocalDate birthday;
     private final Set<Long> friends = new HashSet<>();
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public void addFriend(Long friendId) {
         friends.add(friendId);
     }
 
     public void removeFriend(Long friendId) {
         friends.remove(friendId);
-    }
-
-    public Set<Long> getFriends() {
-        return friends;
     }
 }

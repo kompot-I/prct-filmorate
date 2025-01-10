@@ -27,13 +27,11 @@ public class UserController {
 
     @PostMapping
     public User create(@Valid @RequestBody User user) {
-        usernameCheck(user);
         return userService.createUser(user);
     }
 
     @PutMapping
     public User update(@Valid @RequestBody User user) {
-        usernameCheck(user);
         User updatedUser = userService.update(user);
         log.info(updatedUser.getLogin() + " user data has been updated");
         return updatedUser;
@@ -69,11 +67,5 @@ public class UserController {
     @GetMapping("/{id}/friends/common/{otherId}")
     public List<User> getCommonFriends(@PathVariable Long id, @PathVariable Long otherId) {
         return userService.getCommonFriends(id, otherId);
-    }
-
-    private void usernameCheck(User user) {
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
     }
 }

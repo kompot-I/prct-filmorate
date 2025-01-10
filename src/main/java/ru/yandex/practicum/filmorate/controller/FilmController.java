@@ -1,6 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
@@ -15,17 +15,12 @@ import java.util.List;
 
 @Slf4j
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/films")
 public class FilmController {
 
     private final FilmService filmService;
     private final UserService userService;
-
-    @Autowired
-    public FilmController(FilmService filmService, UserService userService) {
-        this.filmService = filmService;
-        this.userService = userService;
-    }
 
     @GetMapping
     public List<Film> getAllFilms() {
@@ -34,8 +29,9 @@ public class FilmController {
 
     @PostMapping
     public Film addFilm(@Valid @RequestBody Film film) {
+        Film addFilm = filmService.addFilm(film);
         log.info("Film " + film.getName() + " added");
-        return filmService.addFilm(film);
+        return addFilm;
     }
 
     @PutMapping
@@ -58,9 +54,6 @@ public class FilmController {
 
     @PutMapping("/{id}/like/{userId}")
     public void addLike(@PathVariable Long id, @PathVariable Long userId) {
-        if (userService.getUserById(userId) == null) {
-            throw new NotFoundException("User with id " + userId + " not found");
-        }
         filmService.addLike(id, userId);
     }
 

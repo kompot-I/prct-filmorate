@@ -25,7 +25,6 @@ public class UserControllerTest {
     @Disabled()
     @BeforeEach
     void setUp() {
-//        UserStorage userStorage = Mockito.mock(InMemoryUserStorage.class);
         UserService userService = Mockito.mock(UserService.class);
         controller = new UserController(userService);
         user = User.builder()
