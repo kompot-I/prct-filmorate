@@ -13,9 +13,6 @@ public class DateValidator implements ConstraintValidator<ReleaseDate, LocalDate
 
     @Override
     public boolean isValid(LocalDate value, ConstraintValidatorContext context) {
-        if (value.isBefore(FIRST_RELEASE_DATE)) {
-            throw new ValidationException("The release date is no earlier than December 28, 1895");
-        }
-        return true;
+        return value == null || !value.isBefore(FIRST_RELEASE_DATE);
     }
 }
