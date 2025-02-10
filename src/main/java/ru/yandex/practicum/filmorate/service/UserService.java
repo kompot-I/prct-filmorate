@@ -23,18 +23,30 @@ public class UserService {
     }
 
     public User createUser(User user) {
-        validation(user);
+        validate(user);
         log.info("User " + user.getName() + " has been added");
         return userStorage.addUser(user);
     }
 
     public User update(User user) {
-        validation(user);
+        validate(user);
         return userStorage.updateUser(user);
     }
 
     public void deleteUserById(Long id) {
         userStorage.deleteUser(id);
+    }
+
+    public User getUserById(Long id) {
+        User user = userStorage.getUserById(id)
+                .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
+
+        log.info("User found: {}", user);
+        return user;
+    }
+
+    public List<User> getAllUsers() {
+        return userStorage.getAllUsers();
     }
 
     public void addFriend(Long userId, Long friendId) {
@@ -55,18 +67,6 @@ public class UserService {
                 .map(userStorage::getUserById)
                 .flatMap(Optional::stream)
                 .collect(Collectors.toList());
-    }
-
-    public User getUserById(Long id) {
-        User user = userStorage.getUserById(id)
-                .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
-
-        log.info("User found: {}", user);
-        return user;
-    }
-
-    public List<User> getAllUsers() {
-        return userStorage.getAllUsers();
     }
 
     public void removeFriend(Long userId, Long friendId) {
@@ -92,13 +92,17 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    private void validation(User user) {
+    private void validate(User user) {
         if (!(user.getEmail().contains("@"))) {
             throw new ValidationException("Email should contain symbol @");
         }
         if (user.getLogin().contains(" ")) {
             throw new ValidationException("Login should not contain spaces");
         }
+        checkUserName(user);
+    }
+
+    private void checkUserName(User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
