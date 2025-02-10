@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
@@ -11,22 +10,32 @@ import lombok.Data;
 import ru.yandex.practicum.filmorate.annotations.ReleaseDate;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Film.
  */
-@Getter
-@Setter
 @Data
 @Builder
 public class Film {
     private Long id;
-    @NotBlank(message = "Название не может быть пустым")
+    @NotBlank(message = "The name cannot be empty.")
     private String name;
-    @Size(max = 200, message = "Максимальное количество символов 200")
+    @Size(max = 200, message = "The maximum number of characters is 200.")
     private String description;
-    @ReleaseDate
+    @NotNull
+    @ReleaseDate(message = "Release date cannot be earlier than December 28, 1895.")
     private LocalDate releaseDate;
-    @Positive(message = "Продолжительность фильма должна быть положительным числом.")
+    @Positive(message = "The duration of the movie must be a positive number.")
     private Integer duration;
+    private final Set<Long> likes = new HashSet<>();
+
+    public void addLike(Long userId) {
+        likes.add(userId);
+    }
+
+    public int getLikesCount() {
+        return likes.size();
+    }
 }

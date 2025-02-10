@@ -5,18 +5,29 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Builder
 public class User {
     private Long id;
-    @NotBlank(message = "Электронная почта не может быть пустой.")
-    @Email(message = "Электронная почта должна содержать символ @.")
+    @NotBlank(message = "An email cannot be empty.")
+    @Email(message = "The email must contain the @ symbol.")
     private String email;
-    @NotBlank(message = "Логин не должен быть пустым.")
+    @NotBlank(message = "The login must not be empty.")
     private String login;
     private String name;
     @NotNull
-    @PastOrPresent(message = "Неверная дата рождения")
+    @PastOrPresent(message = "Incorrect date of birth.")
     private LocalDate birthday;
+    private final Set<Long> friends = new HashSet<>();
+
+    public void addFriend(Long friendId) {
+        friends.add(friendId);
+    }
+
+    public void removeFriend(Long friendId) {
+        friends.remove(friendId);
+    }
 }
