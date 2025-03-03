@@ -1,33 +1,34 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
-import lombok.Builder;
 import lombok.Data;
+import ru.yandex.practicum.filmorate.utils.Marker;
+import ru.yandex.practicum.filmorate.utils.annotations.CustomEmail;
+import ru.yandex.practicum.filmorate.utils.annotations.NullOrNotBlank;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
 @Data
-@Builder
 public class User {
-    private Long id;
-    @NotBlank(message = "An email cannot be empty.")
-    @Email(message = "The email must contain the @ symbol.")
-    private String email;
-    @NotBlank(message = "The login must not be empty.")
-    private String login;
-    private String name;
-    @NotNull
-    @PastOrPresent(message = "Incorrect date of birth.")
-    private LocalDate birthday;
-    private final Set<Long> friends = new HashSet<>();
+    @NotNull(message = "The ID must be specified", groups = Marker.OnUpdate.class)
+    Long id;
 
-    public void addFriend(Long friendId) {
-        friends.add(friendId);
-    }
+    @CustomEmail(message = "An email cannot be empty. Also email must contain the @ symbol", groups = Marker.OnCreate.class)
+    @CustomEmail(message = "The email must contain the @ symbol.", groups = Marker.OnUpdate.class, allowNull = true)
+    String email;
 
-    public void removeFriend(Long friendId) {
-        friends.remove(friendId);
-    }
+    @NullOrNotBlank(message = "The login must not be empty.", groups = Marker.OnCreate.class)
+    @NullOrNotBlank(message = "The login must not be empty.", groups = Marker.OnUpdate.class, allowNull = true)
+    String login;
+
+    String name;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Past(message = "Incorrect date of birth.")
+    LocalDate birthday;
+
+    final Set<Long> friends = new HashSet<>();
 }
