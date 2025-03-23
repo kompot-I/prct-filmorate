@@ -1,33 +1,30 @@
 package ru.yandex.practicum.filmorate.storage.genre;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.storage.BaseDbStorage;
-import ru.yandex.practicum.filmorate.utils.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.utils.DatabaseUtils;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
-@Slf4j
 @Repository("genreDbStorage")
-public class GenreDbStorage extends BaseDbStorage<Genre> {
-    private static final String FIND_ALL_QUERY = "SELECT id, name FROM genre";
+public class GenreDbStorage implements GenreStorage {
+    private final JdbcTemplate jdbc;
+    private final RowMapper<Genre> mapper;
+    private static final String FIND_ALL_QUERY = "SELECT id, name FROM genres";
     private static final String FIND_BY_ID_QUERY = FIND_ALL_QUERY + " WHERE id = ?";
 
-    @Autowired
-    public GenreDbStorage(JdbcTemplate jdbc, RowMapper<Genre> mapper, ResultSetExtractor<List<Genre>> extractor) {
-        super(jdbc, mapper, extractor);
+    public GenreDbStorage(JdbcTemplate jdbc, RowMapper<Genre> mapper) {
+        this.jdbc = jdbc;
+        this.mapper = mapper;
     }
 
     @Override
     public Collection<Genre> findAll() {
-        return findMany(FIND_ALL_QUERY);
+        return jdbc.query(FIND_ALL_QUERY, mapper);
     }
 
     @Override
@@ -41,13 +38,11 @@ public class GenreDbStorage extends BaseDbStorage<Genre> {
     }
 
     @Override
-    public Genre findById(Long id) {
-        Optional<Genre> genreOpt = findOne(FIND_BY_ID_QUERY, id);
-        if (genreOpt.isEmpty()) {
-            log.error("Genre id: " + id + " doesn't exist");
-            throw new NotFoundException("Genre with id = " + id + " not found");
+    public Genre findById(Long genreId) {
+        List<Long> checkVals = DatabaseUtils.getExistRows(jdbc, "genres", List.of(genreId));
+        if (checkVals.isEmpty()) {
+            throw new NotFoundException("Genre with id = " + genreId + " not found");
         }
-
-        return genreOpt.get();
+        return jdbc.queryForObject(FIND_BY_ID_QUERY, mapper, genreId);
     }
 }

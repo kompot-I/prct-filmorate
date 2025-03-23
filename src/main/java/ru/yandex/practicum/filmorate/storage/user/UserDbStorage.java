@@ -1,133 +1,142 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exception.InternalServerException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.BaseDbStorage;
-import ru.yandex.practicum.filmorate.utils.Tuple2;
-import ru.yandex.practicum.filmorate.utils.exception.DuplicatedDataException;
-import ru.yandex.practicum.filmorate.utils.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.utils.DatabaseUtils;
 
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.*;
 
-@Slf4j
+@Primary
 @Repository("userDbStorage")
-public class UserDbStorage extends BaseDbStorage<User> {
+public class UserDbStorage implements UserStorage {
+    private final JdbcTemplate jdbc;
+    private final RowMapper<User> mapper;
 
-    private static final String FIND_ALL_QUERY = "SELECT u.id, u.name, u.birthday, u.email, u.login, f.friend_id " +
-            "FROM users u " +
-            "LEFT JOIN friends f ON u.id = f.user_id";
-    private static final String FIND_BY_ID_QUERY = FIND_ALL_QUERY + " WHERE u.id = ? ";
+    private static final String CREATE_USER_QUERY = "insert into users(name, email, login, birthday) values (?, ?, ?, ?)";
+    private static final String UPDATE_USER_QUERY = "update users set name = ?, email = ?, login = ?, birthday = ? where id = ?";
+    private static final String FIND_BY_ID_QUERY = "select *, (select count(friend_id) from friends where user_id = id) as friends from users where id = ?";
+    private static final String FIND_ALL_QUERY = "select *, (select count(friend_id) from friends where user_id = id) as friends from users";
+    private static final String GET_FRIENDS_QUERY = "select friend_id from friends where user_id = ?";
+    private static final String ADD_FRIEND_QUERY = "insert into friends(user_id, friend_id) values(?, ?)";
+    private static final String GET_USER_FRIENDS_QUERY = "select t2.*, (select count(friend_id) from friends where user_id = t2.id) as friends " +
+            "from friends t1 " +
+            "inner join users t2 on t2.id = t1.friend_id " +
+            "where t1.user_id = ?";
+    private static final String FIND_COMMON_FRIENDS_QUERY = "select *, (select count(friend_id) from friends where user_id = id) as friends " +
+            "from users " +
+            "where id in (select friend_id from friends where user_id = ?) " +
+            "and id in (select friend_id from friends where user_id = ?)";
+    private static final String DELETE_FRIEND_QUERY = "delete from friends where user_id = ? and friend_id = ?";
+    private static final String ACTUALIZE_FRIENDS_FALSE_QUERY = "update friends set approved = false " +
+            "where user_id = ? and friend_id = ?";
+    private static final String ACTUALIZE_FRIENDS_TRUE_QUERY = "update friends set approved = true " +
+            "where ((user_id = ? and friend_id = ?) or (user_id = ? and friend_id = ?)) " +
+            "and exists(select user_id, friend_id from friends where user_id = ? and friend_id = ?) " +
+            "and exists(select user_id, friend_id from friends where user_id = ? and friend_id = ?)";
 
-    @Autowired
-    protected UserDbStorage(JdbcTemplate jdbc, RowMapper<User> mapper, ResultSetExtractor<List<User>> extractor) {
-        super(jdbc, mapper, extractor);
+
+    public UserDbStorage(JdbcTemplate jdbc, RowMapper<User> mapper) {
+        this.jdbc = jdbc;
+        this.mapper = mapper;
+    }
+
+    @Override
+    public User findById(Long userId) {
+        return jdbc.queryForObject(FIND_BY_ID_QUERY, mapper, userId);
     }
 
     @Override
     public Collection<User> findAll() {
-        return findMany(FIND_ALL_QUERY);
+        return jdbc.query(FIND_ALL_QUERY, mapper);
     }
 
     @Override
     public User create(User user) {
-        SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(jdbc)
-                .withTableName("users")
-                .usingGeneratedKeyColumns("id");
-
-        Map<String, Object> userMap = userToMap(user);
-
-        Long id = simpleJdbcInsert.executeAndReturnKey(userMap).longValue();
-        user.setId(id);
-
-        log.info("User id=" + user.getId() + " successfully added");
-
-        return user;
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbc.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(CREATE_USER_QUERY, Statement.RETURN_GENERATED_KEYS);
+            ps.setObject(1, user.getName());
+            ps.setObject(2, user.getLogin());
+            ps.setObject(3, user.getEmail());
+            ps.setObject(4, user.getBirthday());
+            return ps;
+        }, keyHolder);
+        Long id = keyHolder.getKeyAs(Long.class);
+        if (id != null) {
+            user.setId(id);
+            return user;
+        } else {
+            throw new InternalServerException("Couldn't save data");
+        }
     }
 
     @Override
-    public User update(User newUser) throws NotFoundException, DuplicatedDataException {
-        Long userId = newUser.getId();
+    public User update(User newUser) {
+        int rowsUpdated = jdbc.update(UPDATE_USER_QUERY, newUser.getName(), newUser.getLogin(), newUser.getEmail(), newUser.getBirthday(), newUser.getId());
 
-        if (!isExists(userId, "users")) {
-            log.error("User id: " + userId + " doesn't exist");
-            throw new NotFoundException("User with id = " + userId + " not found");
-        }
-
-        Tuple2<String, Object[]> queryAndParams = createUpdateQueryWithParams(newUser);
-
-        if (update(queryAndParams.getFirst(), queryAndParams.getSecond())) {
-            log.info("User data id=" + userId + " successfully updated");
-        }
-
-        return findById(userId);
-
+        if (rowsUpdated > 0)
+            return newUser;
+        else
+            throw new NotFoundException("User with Id " + newUser.getId() + " does not exist");
     }
 
     @Override
-    public User findById(Long id) {
-        Optional<User> userOpt = findOne(FIND_BY_ID_QUERY, id);
-        if (userOpt.isEmpty()) {
-            log.error("User id: " + id + " doesn't exist");
-            throw new NotFoundException("User with id = " + id + " not found");
+    public Collection<User> findFriends(Long userId) {
+        List<Long> checkVals = DatabaseUtils.getExistRows(jdbc, "users", List.of(userId));
+        if (checkVals.isEmpty()) {
+            throw new NotFoundException("User with id " + userId + " not found");
         }
-
-        return userOpt.get();
+        return jdbc.query(GET_USER_FRIENDS_QUERY, mapper, userId);
     }
 
-    private <T> T checkDuplicate(String filedName, T value) throws DuplicatedDataException {
-        String query = "SELECT COUNT(1) FROM users WHERE " + filedName + " = ?";
-        int count = jdbc.queryForObject(query, Integer.class, value);
+    @Override
+    public Collection<User> findCommonFriends(Long userId, Long friendId) {
+        return jdbc.query(FIND_COMMON_FRIENDS_QUERY, mapper, userId, friendId);
+    }
 
-        if (count > 0) {
-            log.error("Duplication. Value: " + value + " already exists");
-            throw new DuplicatedDataException("This " + filedName + " already in use");
+    @Override
+    public Set<Long> addFriend(Long userId, Long friendId) {
+        List<Long> checkVals = DatabaseUtils.getExistRows(jdbc, "users", List.of(userId, friendId));
+        if (checkVals.size() != 2) {
+            throw new NotFoundException("Couldn't find users by IDs");
         }
-
-        return value;
+        Set<Long> friends = getFriends(userId);
+        if (!friends.contains(friendId)) {
+            int rowsUpdated = jdbc.update(ADD_FRIEND_QUERY, userId, friendId);
+            if (rowsUpdated > 0) {
+                friends.add(friendId);
+                jdbc.update(ACTUALIZE_FRIENDS_TRUE_QUERY, userId, friendId, friendId, userId, userId, friendId, friendId, userId);
+            }
+        }
+        return friends;
     }
 
-    private Tuple2<String, Object[]> createUpdateQueryWithParams(User newUser) {
-        StringBuilder query = new StringBuilder("UPDATE users SET ");
-        List<Object> parameters = new ArrayList<>();
-
-        Optional.ofNullable(newUser.getName()).ifPresent(name -> {
-            parameters.add(name);
-            query.append("name = ?, ");
-        });
-        Optional.ofNullable(newUser.getBirthday()).ifPresent(birthday -> {
-            parameters.add(birthday);
-            query.append("birthday = ?, ");
-        });
-        Optional.ofNullable(newUser.getEmail()).ifPresent(email -> {
-            parameters.add(checkDuplicate("email", email));
-            query.append("email = ?, ");
-        });
-        Optional.ofNullable(newUser.getLogin()).ifPresent(login -> {
-            parameters.add(checkDuplicate("login", login));
-            query.append("login = ?, ");
-        });
-
-        query.delete(query.length() - 2, query.length());
-        query.append(" WHERE id = ?");
-        parameters.add(newUser.getId());
-
-        return new Tuple2<>(query.toString(), parameters.toArray());
+    @Override
+    public Set<Long> deleteFriend(Long userId, Long friendId) {
+        List<Long> checkVals = DatabaseUtils.getExistRows(jdbc, "users", List.of(userId, friendId));
+        if (checkVals.size() != 2) {
+            throw new NotFoundException("User with ids not found");
+        }
+        int rowsUpdated = jdbc.update(DELETE_FRIEND_QUERY, userId, friendId);
+        if (rowsUpdated > 0) {
+            jdbc.update(ACTUALIZE_FRIENDS_FALSE_QUERY, friendId, userId);
+        }
+        return getFriends(userId);
     }
 
-    private Map<String, Object> userToMap(User user) {
-        Map<String, Object> m = new HashMap<>();
-        m.put("name", user.getName());
-        m.put("login", checkDuplicate("login", user.getLogin()));
-        m.put("email", checkDuplicate("email", user.getEmail()));
-        m.put("birthday", user.getBirthday());
-
-        return m;
+    public Set<Long> getFriends(Long userId) {
+        List<Long> userIds = jdbc.queryForList(GET_FRIENDS_QUERY, Long.class, userId);
+        return new HashSet<>(userIds);
     }
-
 }
