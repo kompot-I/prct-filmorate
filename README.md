@@ -18,14 +18,14 @@
 
 - ### Films - stores information about films
 
-| Column         | Type         | Constraint                            | Description          |
-|----------------|--------------|---------------------------------------|----------------------|
-| `id`           | INT          | Primary key                           | Unique identifier    |
-| `name`         | VARCHAR      | Not null and not empty                | Name of the film     |
-| `description`  | VARCHAR(200) | A maximum length is of 200 characters | Description          |
-| `release_date` | DATE         | Must be after December 28, 1985       | Release date         |
-| `duration`     | INT          | Must be a positive value              | Duration of the film |
-| `rating_id`    | INT          | Foreign key references rating table   | Rating identifier    |
+| Column      | Type         | Constraint                            | Description           |
+|-------------|--------------|---------------------------------------|-----------------------|
+| `id`        | INT          | Primary key                           | Unique identifier     |
+| `name`      | VARCHAR      | Not null and not empty                | Name of the film      |
+| `description` | VARCHAR(200) | A maximum length is of 200 characters | Description           |
+| `release_date` | DATE         | Must be after December 28, 1985       | Release date          |
+| `duration`  | INT          | Must be a positive value              | Duration of the film  |
+| `mpa`       | INT          | Foreign key references mpa table   | Mpa rating identifier |
 
 &nbsp;
 
@@ -38,12 +38,12 @@
 
 &nbsp;
 
-- ### Rating - catalog of film rating
+- ### Mpa rating - catalog of film mpa
 
 | Column | Type       | Constraint  | Description                       |
 |--------|------------|-------------|-----------------------------------|
-| `id`   | INT        | Primary key | Unique identifier for each rating |
-| `name` | VARCHAR(5) | -           | Name of the rating                |
+| `id`   | INT        | Primary key | Unique identifier for each mpa |
+| `name` | VARCHAR(5) | -           | Name of the mpa                |
 
 &nbsp;
 
@@ -57,7 +57,7 @@
 
 &nbsp;
 
-- ### user_like_film - tracks user interactions by capturing likes for films.
+- ### likes - tracks user interactions by capturing likes for films.
 
 | Column    | Type | Constraint | Description                       |
 |-----------|------|------------|-----------------------------------|

@@ -3,32 +3,37 @@ package ru.yandex.practicum.filmorate.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
 import lombok.Data;
-import ru.yandex.practicum.filmorate.utils.Marker;
-import ru.yandex.practicum.filmorate.utils.annotations.CustomEmail;
-import ru.yandex.practicum.filmorate.utils.annotations.NullOrNotBlank;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
 @Data
+@NoArgsConstructor
 public class User {
-    @NotNull(message = "The ID must be specified", groups = Marker.OnUpdate.class)
-    Long id;
+    private Long id;
 
-    @CustomEmail(message = "An email cannot be empty. Also email must contain the @ symbol", groups = Marker.OnCreate.class)
-    @CustomEmail(message = "The email must contain the @ symbol.", groups = Marker.OnUpdate.class, allowNull = true)
-    String email;
+    @NotNull
+    @NotBlank
+    @Email
+    private String email;
 
-    @NullOrNotBlank(message = "The login must not be empty.", groups = Marker.OnCreate.class)
-    @NullOrNotBlank(message = "The login must not be empty.", groups = Marker.OnUpdate.class, allowNull = true)
-    String login;
+    @NotNull
+    @NotBlank
+    @Pattern(regexp = "^\\S*$")
+    private String login;
 
-    String name;
+    private String name;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     @Past(message = "Incorrect date of birth.")
-    LocalDate birthday;
+    private LocalDate birthday;
 
-    final Set<Long> friends = new HashSet<>();
+    private Set<Long> friends = new HashSet<>();
+
+    public User(String login, String email) {
+        this.login = login;
+        this.email = email;
+    }
 }
