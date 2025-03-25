@@ -1,33 +1,39 @@
 package ru.yandex.practicum.filmorate.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
-import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
 @Data
-@Builder
+@NoArgsConstructor
 public class User {
     private Long id;
-    @NotBlank(message = "An email cannot be empty.")
-    @Email(message = "The email must contain the @ symbol.")
-    private String email;
-    @NotBlank(message = "The login must not be empty.")
-    private String login;
-    private String name;
+
     @NotNull
-    @PastOrPresent(message = "Incorrect date of birth.")
+    @NotBlank
+    @Email
+    private String email;
+
+    @NotNull
+    @NotBlank
+    @Pattern(regexp = "^\\S*$")
+    private String login;
+
+    private String name;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    @Past(message = "Incorrect date of birth.")
     private LocalDate birthday;
-    private final Set<Long> friends = new HashSet<>();
 
-    public void addFriend(Long friendId) {
-        friends.add(friendId);
-    }
+    private Set<Long> friends = new HashSet<>();
 
-    public void removeFriend(Long friendId) {
-        friends.remove(friendId);
+    public User(String login, String email) {
+        this.login = login;
+        this.email = email;
     }
 }
